@@ -159,15 +159,89 @@ check<Split<"asf,fff,eee,asdf", ",">, ["asf", "fff", "eee", "asdf"]>(Pass);
 
 // Flat 유틸리티 타입
 // 뺄셈이 되지 않는 유틸리티 타입에서 뺄셈 트릭 적용하기
-type SubGenericNumber<N extends number> = [-1, 0, 1, 2, 3, 4, 5, 6, 7][N]
 
-type Flat<T, DEPTH extends number = 1> = {
+type Flat<T, N extends number = 1> = {
   0: T;
-  1: T extends Array<infer A> ? Flat<A, SubGenericNumber<DEPTH>> : T;
-}[DEPTH extends -1 ? 0 : 1];
+  1: T extends Array<infer A> ? Flat<A, Add<N, -1>> : T;
+}[N extends -1 ? 0 : 1];
+
+declare function flat<T extends any[], N extends number = 1>(
+  arr: T,
+  n?: N
+): Flat<T, N>[];
 
 check<Flat<[1, 2, 3, 4, [5]]>,  1 | 2 | 3 | 4 | 5>(Pass);
 check<Flat<[1, 2, 3, [[4]]]>,  [4]>(Pass);
 check<Flat<[1, 2, 3, [[4]], 5], 2>,  [4]>(Fail);
 check<Flat<[1, 2, 3, [4, [5]]]>,  1 | 2 | 3 | 4 | [5]>(Pass);
 check<Flat<[1, 2, 3, 4, 5]>,  1 | 2 | 3 | 4 | 5>(Pass);
+
+const arr = flat([1, 2, 3]);
+const arr2 = flat([1, 2, 3, [4]]);
+const arr3 = flat([1, 2, 3, [[4]]], 2);
+
+type IterationMap = {
+  __: [number, "+" | "-" | "0", "__", "__"];
+  "-2": [-2, "-", "__", "-1"];
+  "-1": [-1, "-", "-2", "0"];
+  "0": [0, "0", "-1", "1"];
+  "1": [1, "+", "0", "2"];
+  "2": [2, "+", "1", "3"];
+  "3": [3, "+", "2", "4"];
+  "4": [4, "+", "3", "5"];
+  "5": [5, "+", "4", "6"];
+  "6": [6, "+", "5", "__"];
+};
+
+type Iteration = [
+  n: number,
+  sign: "+" | "-" | "0",
+  prev: keyof IterationMap,
+  next: keyof IterationMap
+];
+
+type Pos<T extends Iteration> = T[0];
+type Next<T extends Iteration> = IterationMap[T[3]];
+type Prev<T extends Iteration> = IterationMap[T[2]];
+
+type IterationOf<T extends number> = `${T}` extends keyof IterationMap
+  ? IterationMap[`${T}`]
+  : IterationMap[`__`];
+
+// 0 1 2 3
+// 0 1 2
+// 2 -> 0 // 2 prev 1 -> 3
+
+// 1, -2
+// 0 1
+// -2 -1 0
+
+type IsNegative<N extends Iteration> = {
+  "-": true;
+  "+": false;
+  "0": false;
+}[N[1]];
+
+type AddNegative<N1 extends Iteration, N2 extends Iteration> = {
+  0: Pos<N1>;
+  1: AddNegative<Prev<N1>, Next<N2>>;
+}[Pos<N2> extends 0 ? 0 : 1];
+type AddPositive<N1 extends Iteration, N2 extends Iteration> = {
+  0: Pos<N1>;
+  1: AddPositive<Next<N1>, Prev<N2>>;
+}[Pos<N2> extends 0 ? 0 : 1];
+
+type _Add<
+  N1 extends Iteration,
+  N2 extends Iteration
+> = IsNegative<N2> extends true ? AddNegative<N1, N2> : AddPositive<N1, N2>;
+
+type Add<N1 extends number, N2 extends number> = _Add<
+  IterationOf<N1>,
+  IterationOf<N2>
+>;
+
+check<Add<1, 2>, 3>(Pass);
+check<Add<1, -1>, 0>(Pass);
+check<Add<1, -2>, -1>(Pass);
+check<Add<3, -2>, 1>(Pass);
