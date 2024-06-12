@@ -15,7 +15,7 @@ type Test2<T extends number> = T extends 2 ? 3 : 4;
 // 2면 3으로 그 외의 숫자면 4로 추론되는 모습
 type CCTEST = Test2<2>;
 
-// infer는 말그대로 추론이다.
+// infer 는 말그대로 추론이다.
 // 아래 타입은 배열을 받고 배열중 첫번째 인자의 타입을 infer 하여 returnType 으로 정하고 있다.
 type Head<T extends any[]> = T extends [infer A,...any[]]? A : undefined;
 
@@ -120,3 +120,34 @@ check<Concat<[],[1, 2, 3]>, [1, 2, 3]>(Pass)
 type Append<A extends any[], B extends any> = [...A, B];
 
 check<Append<[1, 2], 3>, [1, 2, 3]>(Pass)
+
+
+////// 48:00 ////
+
+// Join 유틸리티 타입
+type Join<T extends any[], Sep extends string> =
+  Length<T> extends 0 ? "" :
+    Length<T> extends 1 ? `${T[0]}` :
+      `${T[0]}${Sep}${Join<Tail<T>, Sep>}`;
+
+check<Join<[1, 2, 3], ",">, "1,2,3">(Pass);
+check<Join<[], ",">, "">(Pass);
+check<Join<[1], ",">, "1">(Pass);
+
+// Replace 유틸리티 타입
+// infer 가 얼마나 유연한지 알 수 있는 유틸리티 타입
+type Replace<T extends string, From extends string, To extends string> =
+  T extends `${infer P1}${From}${infer P2}` ?
+    Replace<`${P1}${To}${P2}`, From, To>
+    : T;
+
+check<Replace<"abcabc", "a", "c">, "cbccbc">(Pass);
+
+// Split 유틸리티 타입
+type Split<T extends string, S extends string, P extends any[] = []> =
+  T extends `${infer P1}${S}${infer P2}` ?
+    Split<P2, S, Append<P, P1>>
+    : Append<P, T>;
+
+check<Split<"a,b,c", ",">, ["a", "b", "c"]>(Pass);
+check<Split<"asf,fff,eee,asdf", ",">, ["asf", "fff", "eee", "asdf"]>(Pass);
