@@ -48,8 +48,13 @@ check<Head<[]>, undefined>(Pass)
 check<Head<[]>, 2>(Fail)
 
 // Length 타입 유틸리티
-type Length<T extends any[]> = T["length"];
+type Length<T extends any[] | string, P extends any[] = []> = T extends any[] ?
+  T["length"] :
+  T extends `${T[0]}${infer A}` ?
+    Length<A, Append<P, T[0]>> :
+    Length<P>;
 check<Length<[1, 2, 3]>, 3>(Pass);
+check<Length<"123">, 3>(Pass);
 
 // HasTail 타입 유틸리티
 type HasTail<T extends any[]> = Length<T> extends 0 ? false : true;
