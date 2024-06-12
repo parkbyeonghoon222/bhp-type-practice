@@ -151,3 +151,18 @@ type Split<T extends string, S extends string, P extends any[] = []> =
 
 check<Split<"a,b,c", ",">, ["a", "b", "c"]>(Pass);
 check<Split<"asf,fff,eee,asdf", ",">, ["asf", "fff", "eee", "asdf"]>(Pass);
+
+// Flat 유틸리티 타입
+// 뺄셈이 되지 않는 유틸리티 타입에서 뺄셈 트릭 적용하기
+type SubGenericNumber<N extends number> = [-1, 0, 1, 2, 3, 4, 5, 6, 7][N]
+
+type Flat<T, DEPTH extends number = 1> = {
+  0: T;
+  1: T extends Array<infer A> ? Flat<A, SubGenericNumber<DEPTH>> : T;
+}[DEPTH extends -1 ? 0 : 1];
+
+check<Flat<[1, 2, 3, 4, [5]]>,  1 | 2 | 3 | 4 | 5>(Pass);
+check<Flat<[1, 2, 3, [[4]]]>,  [4]>(Pass);
+check<Flat<[1, 2, 3, [[4]], 5], 2>,  [4]>(Fail);
+check<Flat<[1, 2, 3, [4, [5]]]>,  1 | 2 | 3 | 4 | [5]>(Pass);
+check<Flat<[1, 2, 3, 4, 5]>,  1 | 2 | 3 | 4 | 5>(Pass);
