@@ -1,0 +1,15 @@
+{
+  "name": "bhp-type-practice",
+  "version": "1.0.0",
+  "description": "타입 연습 레포지토리",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^5.4.5"
+  }
+}
