@@ -60,6 +60,7 @@ check<HasTail<[1, 2, 3]>, true>(Pass);
 // Tail 타입 유틸리티
 type Tail<T extends any[]> = T extends [any, ...infer A] ? A : [];
 check<Tail<[1,2,3,4,5]>, [2,3,4,5]>(Pass);
+check<Tail<[1,2,3,4,5]>, [2,3,4,5]>(Pass);
 
 // Last 타입 유틸리티
 type Last<T extends any[]> = T extends [...any[], infer A] ? A : undefined;
@@ -102,4 +103,20 @@ check<Drop<0, [1, 2, 3, 4, 5, 6]>, [4, 5, 6]>(Fail);
 check<Drop<0, [1, 2, 3, 4, 5, 6]>, [1, 2, 3, 4, 5, 6]>(Pass);
 check<Drop<3, [1, 2, 3, 4, 5, 6]>, [4, 5, 6]>(Pass);
 
-// Reverse 타입
+// Reverse 타입 유틸리티
+type Reverse<T extends any[], P extends any[] = []> = {
+  0: P,
+  1: Reverse<Tail<T>, Prepend<P, Head<T>>>,
+}[Length<T> extends 0 ? 0 : 1];
+
+check<Reverse<[1, 2, 3, 4, 5, 6]>, [6, 5, 4, 3, 2, 1]>(Pass);
+
+// Concat 타입 유틸리티
+type Concat<A extends any[], B extends any[]> = [...A, ...B];
+
+check<Concat<[],[1, 2, 3]>, [1, 2, 3]>(Pass)
+
+// Append 타입 유틸리티
+type Append<A extends any[], B extends any> = [...A, B];
+
+check<Append<[1, 2], 3>, [1, 2, 3]>(Pass)
