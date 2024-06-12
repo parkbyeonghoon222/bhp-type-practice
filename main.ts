@@ -16,7 +16,7 @@ type Test2<T extends number> = T extends 2 ? 3 : 4;
 type CCTEST = Test2<2>;
 
 // infer는 말그대로 추론이다.
-// 아래 타입은 배열을 받고 배열중  첫번째 인자의 타입을 infer 하여 returnType 으로 정하고 있다.
+// 아래 타입은 배열을 받고 배열중 첫번째 인자의 타입을 infer 하여 returnType 으로 정하고 있다.
 type Head<T extends any[]> = T extends [infer A,...any[]]? A : undefined;
 
 // 1로 결과 타입이 추론되는 모습
@@ -41,7 +41,65 @@ check<1, 1>(Pass);
 //check<1, 2>(Pass) 이 코드는 타입에러가 발생
 check<1, 2>(Fail);
 
+// 사용 예시
 check<Head<[1, 2, 3, 4]>, 1>(Pass);
-check<1, 2>(Fail)
-check<1, 2>(Fail)
-check<1, 2>(Fail)
+check<Head<[1]>, 2>(Fail)
+check<Head<[]>, undefined>(Pass)
+check<Head<[]>, 2>(Fail)
+
+// Length 타입 유틸리티
+type Length<T extends any[]> = T["length"];
+check<Length<[1, 2, 3]>, 3>(Pass);
+
+// HasTail 타입 유틸리티
+type HasTail<T extends any[]> = Length<T> extends 0 ? false : true;
+check<HasTail<[1]>, true>(Pass);
+check<HasTail<[]>, true>(Fail);
+check<HasTail<[1, 2, 3]>, true>(Pass);
+
+// Tail 타입 유틸리티
+type Tail<T extends any[]> = T extends [any, ...infer A] ? A : [];
+check<Tail<[1,2,3,4,5]>, [2,3,4,5]>(Pass);
+
+// Last 타입 유틸리티
+type Last<T extends any[]> = T extends [...any[], infer A] ? A : undefined;
+check<Last<[1, 2, 3, 4]>, 4>(Pass);
+
+// Prepend 타입 유틸리티
+type Prepend<T extends any[], E> = [E, ...T];
+check<Prepend<[2, 3, 4], 1>, [1 ,2 ,3 , 4]>(Pass);
+
+// Drop 타입 유틸리티 (중요) 37분
+// returnType 을 객체로 정의하고 특정 키의 value 를 returnType 으로 정하는 모습이다.
+type DropTest1<N, T extends any[]> = {
+  0: T;
+  1: any;
+}[0];
+
+// 여기서 조건식을 넣는다면 특정 조건에 따라 returnType 이 정해진다.
+type DropTest2<N, T extends any[]> = {
+  0: T;
+  1: any;
+}[Length<T> extends N ? 0 : 1];
+
+// 여기서 P 배열 제네릭 타입을 이용해보자.
+// T에서 N개 만큼의 데이터 요소를 pop 한 배열 타입을 P로 정의하고 싶은데 어떻게 해야할까
+type DropTest3<N, T extends any[], P extends any[] = []> = {
+  0: T;
+  1: P;
+}[Length<P> extends N ? 0 : 1];
+
+// 재귀타입을 이용해보자
+// 재귀를 이용하여 P의 배열 길이가 N에 다를때까지 T의 맨끝 요소를 P에 Prepend 한다.
+// 탈출조건에 다다랐을때 남은 배열 T의 타입을 리턴한다.
+type Drop<N, T extends any[], P extends any[] = []> = {
+  0: T;
+  1: Drop<N, Tail<T>, Prepend<P, any>>;
+}[Length<P> extends N ? 0 : 1];
+
+check<Drop<3, [1, 2, 3, 4, 5, 6]>, [4, 5, 6]>(Pass);
+check<Drop<0, [1, 2, 3, 4, 5, 6]>, [4, 5, 6]>(Fail);
+check<Drop<0, [1, 2, 3, 4, 5, 6]>, [1, 2, 3, 4, 5, 6]>(Pass);
+check<Drop<3, [1, 2, 3, 4, 5, 6]>, [4, 5, 6]>(Pass);
+
+// Reverse 타입
